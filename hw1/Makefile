@@ -1,6 +1,8 @@
 obj-m := pseudo.o
 
-all:
+all: kmod testpseudo
+
+kmod: pseudo.c
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
 testpseudo: testpseudo.c

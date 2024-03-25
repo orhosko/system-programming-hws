@@ -66,6 +66,37 @@ ssize_t pseudo_read(struct file *fp, char __user *buf, size_t count,
 
 ssize_t pseudo_write(struct file *fp, const char *buf, size_t count,
                      loff_t *f_pos) {
+  int err = 0;
+
+  if (down_interruptible(&pseudo_sem) != 0) {
+    return -ERESTARTSYS;
+  }
+
+  if (*f_pos >= pseudo_capacity) {
+    up(&pseudo_sem);
+    return 0;
+  }
+
+  if (*f_pos + count > pseudo_capacity) {
+    count = pseudo_capacity - *f_pos;
+  }
+
+  strncpy(pseudo_data + *f_pos, buf, count);
+
+  // for (int i = 0; i < count; i++) {
+  //
+  //   strncpy(pseudo_data + *f_pos, buf + i, 1);
+  //
+  //   if (err != 0) {
+  //     up(&pseudo_sem);
+  //     return -EFAULT;
+  //   }
+  //   (*f_pos)++;
+  // }
+
+  up(&pseudo_sem);
+  return count;
+
   return 0;
 }
 

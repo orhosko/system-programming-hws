@@ -3,5 +3,6 @@
 *.mod
 *.mod.c
 *.cmd
+*.idx
 modules.order
 Module.symvers

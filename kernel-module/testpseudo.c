@@ -4,6 +4,7 @@
 
 #define MAX_BUF 200
 
+// TODO implement append_test
 int append_test(char *text) {
   FILE *fp = fopen("/dev/pseudo", "w+");
 
@@ -22,6 +23,54 @@ int append_test(char *text) {
   if (text != NULL) {
     fwrite(text, 1, strlen(text), fp);
   }
+
+  fclose(fp);
+  return 0;
+}
+
+int llseek_test(char *offset) {
+  FILE *fp = fopen("/dev/pseudo", "r");
+  char buf[MAX_BUF];
+  int offs = 0;
+
+  if (offset != NULL) {
+    offs = atoi(offset);
+  }
+
+  if (fp == NULL) {
+    printf("Error opening file\n");
+    return -1;
+  }
+
+  printf("SEEK_SET: %d\n", offs);
+
+  fseek(fp, offs, SEEK_SET);
+
+  int read = fread(buf, 5, 1, fp);
+
+  printf("%d\n", read);
+
+  for (int i = 0; i < 5; i++) {
+    printf("buff: %d(%c)\n", buf[i], buf[i]);
+  }
+
+  printf("\n");
+
+  ////////////////////////////////////////////////////////////
+
+  printf("SEEK_CUR: %d\n", offs);
+
+  fseek(fp, offs, SEEK_CUR);
+
+  read = fread(buf, 5, 1, fp);
+
+  printf("%d\n", read);
+
+  for (int i = 0; i < 5; i++) {
+    printf("buff: %d(%c)\n", buf[i], buf[i]);
+  }
+
+  printf("\n");
 
   fclose(fp);
   return 0;
@@ -85,7 +134,7 @@ int read_test(char *size) {
 int main(int argc, char *argv[]) {
 
   if (argc < 3) {
-    printf("Usage: %s [r|w] [size|text]\n", argv[0]);
+    printf("Usage: %s [r|w|a|l] [size|text|text|offset]\n", argv[0]);
     return -1;
   }
 
@@ -103,6 +152,11 @@ int main(int argc, char *argv[]) {
   case 'a':
     printf("Append test\n");
     append_test(argv[2]);
+    break;
+
+  case 'l':
+    printf("llseek test\n");
+    llseek_test(argv[2]);
     break;
 
   default:

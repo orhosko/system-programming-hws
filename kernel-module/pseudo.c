@@ -115,12 +115,40 @@ ssize_t pseudo_write(struct file *fp, const char *buf, size_t count,
   return 0;
 }
 
+loff_t pseudo_llseek(struct file *filp, loff_t off, int whence) {
+  loff_t newpos;
+
+  switch (whence) {
+  case 0: /* SEEK_SET */
+    newpos = off;
+    break;
+
+  case 1: /* SEEK_CUR */
+    newpos = filp->f_pos + off;
+    break;
+
+  case 2: /* SEEK_END */
+    newpos = pseudo_capacity + off;
+    break;
+
+  default: /* can't happen */
+    return -EINVAL;
+  }
+
+  if (newpos < 0)
+    return -EINVAL;
+
+  filp->f_pos = newpos;
+  return newpos;
+}
+
 struct file_operations pseudo_fops = {
     .owner = THIS_MODULE,
     .open = pseudo_open,
     .release = pseudo_release,
     .read = pseudo_read,
     .write = pseudo_write,
+    .llseek = pseudo_llseek,
 };
 
 void pseudo_fill(void) {

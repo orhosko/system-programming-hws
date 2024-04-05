@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
 
 #define MAX_BUF 200
 
@@ -131,6 +132,31 @@ int read_test(char *size) {
   return 0;
 }
 
+int shift_test(char *offset) {
+  FILE *fp = fopen("/dev/pseudo", "r");
+  char buf[MAX_BUF];
+  int offs = 0;
+
+  if (offset != NULL) {
+    offs = atoi(offset);
+  }
+
+  if (fp == NULL) {
+    printf("Error opening file\n");
+    return -1;
+  }
+
+  printf("Offset: %d\n", offs);
+
+  ioctl(fileno(fp), 0, offs);
+
+  fclose(fp);
+
+  read_test("50");
+
+  return 0;
+}
+
 int main(int argc, char *argv[]) {
 
   if (argc < 3) {
@@ -157,6 +183,11 @@ int main(int argc, char *argv[]) {
   case 'l':
     printf("llseek test\n");
     llseek_test(argv[2]);
+    break;
+
+  case 's':
+    printf("Shift test\n");
+    shift_test(argv[2]);
     break;
 
   default:

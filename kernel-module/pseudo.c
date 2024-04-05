@@ -142,6 +142,39 @@ loff_t pseudo_llseek(struct file *filp, loff_t off, int whence) {
   return newpos;
 }
 
+long pseudo_ioctl(struct file *file, unsigned int cmd, unsigned long argp) {
+  switch (cmd) {
+  case 0: // SHIFT
+    pr_info("Shift\n");
+
+    int shift = 0;
+
+    shift = (int)argp;
+
+    int *temp = kmalloc(shift, GFP_KERNEL);
+    for (int i = 0; i < shift; i++) {
+      temp[i] = pseudo_data[i];
+    }
+
+    for (int i = 0; i < pseudo_capacity - shift; i++) {
+      pseudo_data[i] = pseudo_data[i + shift];
+    }
+
+    for (int i = 0; i < shift; i++) {
+      pseudo_data[pseudo_capacity - shift + i] = temp[i];
+    }
+
+    file->f_pos = 0;
+
+    break;
+
+  default:
+    pr_info("Default, %d\n", cmd);
+    break;
+  }
+  return 0;
+}
+
 struct file_operations pseudo_fops = {
     .owner = THIS_MODULE,
     .open = pseudo_open,
@@ -149,6 +182,7 @@ struct file_operations pseudo_fops = {
     .read = pseudo_read,
     .write = pseudo_write,
     .llseek = pseudo_llseek,
+    .unlocked_ioctl = pseudo_ioctl,
 };
 
 void pseudo_fill(void) {

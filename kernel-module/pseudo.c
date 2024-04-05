@@ -1,6 +1,7 @@
 #include <linux/cdev.h>
 #include <linux/fs.h>
 #include <linux/module.h>
+#include <linux/string.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Orhan Berkay Yılmaz");
@@ -35,6 +36,9 @@ ssize_t pseudo_read(struct file *fp, char __user *buf, size_t count,
     return -ERESTARTSYS;
   }
 
+  // printk(KERN_DEBUG "pseudo: count: %d\n", count);
+  // printk(KERN_DEBUG "pseudo: fpos: %d\n", *f_pos);
+
   if (*f_pos >= pseudo_capacity) {
     *f_pos = 0; // or % pseudo_capacity;
 
@@ -60,6 +64,7 @@ ssize_t pseudo_read(struct file *fp, char __user *buf, size_t count,
 
     (*f_pos)++;
   }
+
   up(&pseudo_sem);
   return count;
 }
@@ -77,11 +82,21 @@ ssize_t pseudo_write(struct file *fp, const char *buf, size_t count,
     return 0;
   }
 
+  printk(KERN_DEBUG "pseudo: count: %d\n", count);
+  printk(KERN_DEBUG "pseudo: fpos: %d\n", *f_pos);
+
   if (*f_pos + count > pseudo_capacity) {
     count = pseudo_capacity - *f_pos;
   }
 
-  strncpy(pseudo_data + *f_pos, buf, count);
+  err = copy_from_user(pseudo_data + *f_pos, buf, count);
+
+  if (err != 0) {
+    up(&pseudo_sem);
+    return -EFAULT;
+  }
+
+  *f_pos += count;
 
   // for (int i = 0; i < count; i++) {
   //

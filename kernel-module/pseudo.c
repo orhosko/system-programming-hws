@@ -1,6 +1,7 @@
 #include <linux/cdev.h>
 #include <linux/fs.h>
 #include <linux/module.h>
+#include <linux/proc_fs.h>
 #include <linux/string.h>
 
 MODULE_LICENSE("GPL");
@@ -185,6 +186,56 @@ struct file_operations pseudo_fops = {
     .unlocked_ioctl = pseudo_ioctl,
 };
 
+/*
+** This function will be called when we open the procfs file
+*/
+static int open_proc(struct inode *inode, struct file *file) {
+  pr_info("proc file opend.....\t");
+  return 0;
+}
+/*
+** This function will be called when we close the procfs file
+*/
+static int release_proc(struct inode *inode, struct file *file) {
+  pr_info("proc file released.....\n");
+  return 0;
+}
+/*
+** This function will be called when we read the procfs file
+*/
+static ssize_t read_proc(struct file *filp, char __user *buffer, size_t length,
+                         loff_t *offset) {
+  pr_info("proc file read.....\n");
+
+  // if (copy_to_user(buffer, etx_array, 20)) {
+  //   pr_err("Data Send : Err!\n");
+  // }
+
+  return length;
+  ;
+}
+/*
+** This function will be called when we write the procfs file
+*/
+static ssize_t write_proc(struct file *filp, const char *buff, size_t len,
+                          loff_t *off) {
+  pr_info("proc file wrote.....\n");
+
+  // if (copy_from_user(etx_array, buff, len)) {
+  //   pr_err("Data Write : Err!\n");
+  // }
+
+  return len;
+}
+
+/*
+** procfs operation sturcture
+*/
+static struct proc_ops proc_fops = {.proc_open = open_proc,
+                                    .proc_read = read_proc,
+                                    .proc_write = write_proc,
+                                    .proc_release = release_proc};
+
 void pseudo_fill(void) {
   int i = 0;
 
@@ -225,6 +276,7 @@ static int pseudo_init(void) {
   if (err != 0) {
     printk(KERN_NOTICE "Error %d adding pseudo device", err);
   }
+  proc_create("pseudo_proc", 0666, NULL, &proc_fops);
   return 0;
 }
 
@@ -235,6 +287,7 @@ static void pseudo_exit(void) {
   devno = MKDEV(pseudo_major, pseudo_minor);
   unregister_chrdev_region(devno, 1);
   kfree(pseudo_data);
+  remove_proc_entry("pseudo_proc", NULL);
 }
 
 module_init(pseudo_init);

@@ -5,9 +5,11 @@
 
 #define MAX_BUF 200
 
+char *file_path = "/dev/pseudo-dev";
+
 // TODO implement append_test
 int append_test(char *text) {
-  FILE *fp = fopen("/dev/pseudo", "w+");
+  FILE *fp = fopen(file_path, "w+");
 
   if (fp == NULL) {
     printf("Error opening file\n");
@@ -30,7 +32,7 @@ int append_test(char *text) {
 }
 
 int llseek_test(char *offset) {
-  FILE *fp = fopen("/dev/pseudo", "r");
+  FILE *fp = fopen(file_path, "r");
   char buf[MAX_BUF];
   int offs = 0;
 
@@ -78,7 +80,7 @@ int llseek_test(char *offset) {
 }
 
 int write_test(char *text) {
-  FILE *fp = fopen("/dev/pseudo", "w");
+  FILE *fp = fopen(file_path, "w");
 
   if (fp == NULL) {
     printf("Error opening file\n");
@@ -101,7 +103,7 @@ int write_test(char *text) {
 }
 
 int read_test(char *size) {
-  FILE *fp = fopen("/dev/pseudo", "r");
+  FILE *fp = fopen(file_path, "r");
   char buf[MAX_BUF];
   int read_size = 0;
 
@@ -133,7 +135,7 @@ int read_test(char *size) {
 }
 
 int shift_test(char *offset) {
-  FILE *fp = fopen("/dev/pseudo", "r");
+  FILE *fp = fopen(file_path, "r");
   char buf[MAX_BUF];
   int offs = 0;
 

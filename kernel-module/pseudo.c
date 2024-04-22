@@ -1,7 +1,6 @@
 #include <linux/cdev.h>
 #include <linux/fs.h>
 #include <linux/module.h>
-#include <linux/proc_fs.h>
 #include <linux/string.h>
 
 MODULE_LICENSE("GPL");
@@ -186,56 +185,6 @@ struct file_operations pseudo_fops = {
     .unlocked_ioctl = pseudo_ioctl,
 };
 
-/*
-** This function will be called when we open the procfs file
-*/
-static int open_proc(struct inode *inode, struct file *file) {
-  pr_info("proc file opend.....\t");
-  return 0;
-}
-/*
-** This function will be called when we close the procfs file
-*/
-static int release_proc(struct inode *inode, struct file *file) {
-  pr_info("proc file released.....\n");
-  return 0;
-}
-/*
-** This function will be called when we read the procfs file
-*/
-static ssize_t read_proc(struct file *filp, char __user *buffer, size_t length,
-                         loff_t *offset) {
-  pr_info("proc file read.....\n");
-
-  // if (copy_to_user(buffer, etx_array, 20)) {
-  //   pr_err("Data Send : Err!\n");
-  // }
-
-  return length;
-  ;
-}
-/*
-** This function will be called when we write the procfs file
-*/
-static ssize_t write_proc(struct file *filp, const char *buff, size_t len,
-                          loff_t *off) {
-  pr_info("proc file wrote.....\n");
-
-  // if (copy_from_user(etx_array, buff, len)) {
-  //   pr_err("Data Write : Err!\n");
-  // }
-
-  return len;
-}
-
-/*
-** procfs operation sturcture
-*/
-static struct proc_ops proc_fops = {.proc_open = open_proc,
-                                    .proc_read = read_proc,
-                                    .proc_write = write_proc,
-                                    .proc_release = release_proc};
-
 void pseudo_fill(void) {
   int i = 0;
 
@@ -244,6 +193,8 @@ void pseudo_fill(void) {
   }
 }
 
+static struct class *cl; // Global variable for the device class
+ 
 static int pseudo_init(void) {
   dev_t devno = 0;
   int result = -1;
@@ -267,16 +218,38 @@ static int pseudo_init(void) {
     return result;
   }
 
+  if ((cl = class_create("chardrv")) == NULL)
+  {
+    unregister_chrdev_region(devno, 1);
+    return -1;
+  }
+  
+  if (device_create(cl, NULL, devno, NULL, "pseudo-dev") == NULL)
+  {
+    class_destroy(cl);
+    unregister_chrdev_region(devno, 1);
+    return -1;
+  }
+  
   sema_init(&pseudo_sem, 1);
 
   cdev_init(&pseudo_cdev, &pseudo_fops);
   pseudo_cdev.owner = THIS_MODULE;
   pseudo_cdev.ops = &pseudo_fops;
-  err = cdev_add(&pseudo_cdev, devno, 1);
-  if (err != 0) {
+
+  if (cdev_add(&pseudo_cdev, devno, 1) == -1)
+  {
+    device_destroy(cl, devno);
+    class_destroy(cl);
+    unregister_chrdev_region(devno, 1);
+    return -1;
     printk(KERN_NOTICE "Error %d adding pseudo device", err);
   }
-  proc_create("pseudo_proc", 0666, NULL, &proc_fops);
+
+  // err = cdev_add(&pseudo_cdev, devno, 1);
+  // if (err != 0) {
+  //   printk(KERN_NOTICE "Error %d adding pseudo device", err);
+  // }
   return 0;
 }
 
@@ -285,9 +258,12 @@ static void pseudo_exit(void) {
 
   cdev_del(&pseudo_cdev);
   devno = MKDEV(pseudo_major, pseudo_minor);
+
+  device_destroy(cl, devno);
+  class_destroy(cl);
+
   unregister_chrdev_region(devno, 1);
   kfree(pseudo_data);
-  remove_proc_entry("pseudo_proc", NULL);
 }
 
 module_init(pseudo_init);
